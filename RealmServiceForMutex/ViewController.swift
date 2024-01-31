@@ -28,7 +28,10 @@ class ViewController: UIViewController {
 
 }
 
-//Buggy code
+// MARK: Uncomment this buggy code to get crash
+
+// This class demonstrates a common mistake in handling Realm objects across threads.
+// It directly manipulates Realm objects without considering thread safety, leading to crashes.
 
 //class RealmConcurrentTest {
 //    private var realm: Realm!
@@ -38,6 +41,9 @@ class ViewController: UIViewController {
 //        realm = try! Realm()
 //    }
 //
+
+//    // Sets up test data by writing a new Item to the Realm database.
+//    // It incorrectly stores a direct reference to the Realm object, which is not thread-safe.
 //    func setupTestData() {
 //        try! realm.write {
 //            let newItem = Item(name: "Test Item")
@@ -46,6 +52,7 @@ class ViewController: UIViewController {
 //        }
 //    }
 //
+//    // Deletes the test item. This operation itself is safe.
 //    func deleteItem() {
 //        if let itemToDelete = self.testItem {
 //            try! realm.write {
@@ -54,6 +61,9 @@ class ViewController: UIViewController {
 //        }
 //    }
 //
+//    // Tries to access the deleted item from a background thread.
+//    // This causes a crash because the item has been deleted and is being accessed
+//    // from a different thread, violating Realm's thread safety rules.
 //    func accessDeletedItem() {
 //        DispatchQueue.global().async {
 //            // Directly accessing the stored Realm object reference in a background thread
@@ -64,6 +74,12 @@ class ViewController: UIViewController {
 //    }
 //}
 
+
+// MARK: if you uncomment above, comment below code
+
+// This class demonstrates a correct and safe way to handle Realm objects across threads.
+// It uses a `RealmServiceWithLock` to manage thread safety, preventing crashes.
+
 class RealmConcurrentTest {
     private var realmService = RealmServiceWithLock()
     private var itemId: String?
@@ -71,7 +87,9 @@ class RealmConcurrentTest {
     init() {
         setupTestData()
     }
-
+    
+    // Sets up test data in a thread-safe manner using `RealmServiceWithLock`.
+    // Instead of storing a direct object reference, it stores only the item ID.
     func setupTestData() {
         realmService.performWrite {
             let newItem = Item(name: "Test Item")
@@ -81,6 +99,7 @@ class RealmConcurrentTest {
         }
     }
 
+    // Deletes the item in a thread-safe way using `RealmServiceWithLock`.
     func deleteItem() {
         guard let itemId = self.itemId else { return }
         realmService.performWrite {
@@ -91,6 +110,9 @@ class RealmConcurrentTest {
         }
     }
 
+    // Tries to access the potentially deleted item from a background thread in a safe way.
+    // It uses `RealmServiceWithLock` to ensure thread-safe read operations.
+    // This prevents crashes by ensuring thread-safe access to the Realm object.
     func accessDeletedItem() {
         guard let itemId = self.itemId else { return }
         DispatchQueue.global().async {
